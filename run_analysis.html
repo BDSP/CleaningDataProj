@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<!-- saved from url=(0014)about:internet -->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=9" >
+
+<title>Getting and Cleaning Data Course Project</title>
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 12px;
+   margin: 8px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 { 
+   font-size:2.2em; 
+}
+
+h2 { 
+   font-size:1.8em; 
+}
+
+h3 { 
+   font-size:1.4em; 
+}
+
+h4 { 
+   font-size:1.0em; 
+}
+
+h5 { 
+   font-size:0.9em; 
+}
+
+h6 { 
+   font-size:0.8em; 
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre {	
+   margin-top: 0;
+   max-width: 95%;
+   border: 1px solid #ccc;
+   white-space: pre-wrap;
+}
+
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code.r, code.cpp {
+   background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * { 
+      background: transparent !important; 
+      color: black !important; 
+      filter:none !important; 
+      -ms-filter: none !important; 
+   }
+
+   body { 
+      font-size:12pt; 
+      max-width:100%; 
+   }
+       
+   a, a:visited { 
+      text-decoration: underline; 
+   }
+
+   hr { 
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote { 
+      padding-right: 1em; 
+      page-break-inside: avoid; 
+   }
+
+   tr, img { 
+      page-break-inside: avoid; 
+   }
+
+   img { 
+      max-width: 100% !important; 
+   }
+
+   @page :left { 
+      margin: 15mm 20mm 15mm 10mm; 
+   }
+     
+   @page :right { 
+      margin: 15mm 10mm 15mm 20mm; 
+   }
+
+   p, h2, h3 { 
+      orphans: 3; widows: 3; 
+   }
+
+   h2, h3 { 
+      page-break-after: avoid; 
+   }
+}
+
+</style>
+
+
+
+
+
+</head>
+
+<body>
+<h1>Getting and Cleaning Data Course Project</h1>
+
+<p>Xuan Kong
+Last modified on May 23, 2014</p>
+
+<h3>Step 1 Read Feature Names from Original Source</h3>
+
+<p>IMPORTANT: Make sure that the original data directory is unzipped to &ldquo;UCI HAR Dataset&rdquo; in current directory.</p>
+
+<p>We first read feature names and determines the colums that correspond to mean and standard deviation for each measurement. They are identified if the feature name contains string mean() and std()</p>
+
+<pre><code class="R ReadFeatureName">featureData &lt;- read.table(&quot;UCI HAR Dataset/features.txt&quot;, sep = &quot;&quot;, col.names = c(&quot;sqNo&quot;, &quot;Name&quot;))
+meanFeatureCol &lt;- grep(&quot;mean()&quot;, featureData$Name, fixed=TRUE)
+stdFeatureCol &lt;- grep(&quot;std()&quot;, featureData$Name, fixed=TRUE)
+</code></pre>
+
+<h3>Step 2 Read Descriptive Activity Labels from Original Source</h3>
+
+<p>We next read the activity labels corresponding to the activity code from &ldquo;activity_labels.txt&rdquo; file</p>
+
+<pre><code class="R ReadActivityLabel">activityLabel &lt;- read.table(&quot;UCI HAR Dataset/activity_labels.txt&quot;, col.names = c(&quot;Value&quot;,&quot;Label&quot;))
+</code></pre>
+
+<h3>Step 3 Merge Test and Train Sets Read from Original Source</h3>
+
+<p>We then read the original data and merge the test and train sets together. Subject ID and activity type data are read first for test dataset, then the feature data are read with appropriate column names (feature names extracted earlier).  Data read are repeated for train dataset, and the results are merged (combined) with test dataset via rbind() function.  </p>
+
+<pre><code class="R ReadData">subjData &lt;- read.table(&quot;UCI HAR Dataset/test/subject_test.txt&quot;,col.names = &quot;SubjectID&quot;)
+activityData &lt;- read.table(&quot;UCI HAR Dataset/test/y_test.txt&quot;, col.names = &quot;ActivityType&quot;)
+testData &lt;- read.table(&quot;UCI HAR Dataset/test/X_test.txt&quot;,col.names = featureData$Name)
+
+subjData &lt;- rbind(subjData, read.table(&quot;UCI HAR Dataset/train/subject_train.txt&quot;,col.names = &quot;SubjectID&quot;))
+activityData &lt;- rbind(activityData, read.table(&quot;UCI HAR Dataset/train/y_train.txt&quot;, col.names = &quot;ActivityType&quot;))
+testData &lt;- rbind(testData, read.table(&quot;UCI HAR Dataset/train/X_train.txt&quot;,col.names = featureData$Name))
+</code></pre>
+
+<p>Finally, the activity type codes are replaced with descriptive activity names.  All data are then put into a data frame called allData.</p>
+
+<pre><code class="R LabelData">activityData &lt;- activityLabel$Label[activityData[,1]]
+allData &lt;- data.frame(subjData, ActivityType = activityData, testData)
+</code></pre>
+
+<h3>Step 4 Extract Mean and Standard Deviation Measurements</h3>
+
+<p>Now allData contains a complete set of the data, including all features from both training and test datasets. Next we extract only the columns on the mean and standard deviation for each measurement. We utilize the column indices identified earlier for the mean and standard deviation features.</p>
+
+<pre><code class="R ExtractData">selectData &lt;- data.frame(subjData, ActivityType = activityData, testData[,c(meanFeatureCol, stdFeatureCol)])
+</code></pre>
+
+<h3>Step 5 Create Tidy Dataset</h3>
+
+<p>Next we create a tidy dataset with the average of each variable (means and standard deviations) for each activity type (six of them) and subject (1-30).</p>
+
+<pre><code class="R CreateTidy DataSet">nColCnt = ncol(selectData)
+newData &lt;- aggregate(selectData[,3:nColCnt], by=list(selectData$ActivityType,selectData$SubjectID), FUN = &quot;mean&quot;)
+colnames(newData)[1:2] &lt;- c(&quot;Activity.type&quot;,&quot;Subject.id&quot;)
+colnames(newData) &lt;- gsub(&quot;...&quot;,&quot;.&quot;,colnames(newData),fixed=TRUE)
+colnames(newData) &lt;- gsub(&quot;..&quot;,&quot;&quot;,colnames(newData),fixed=TRUE)
+</code></pre>
+
+<h3>Step 6 Output Tidy Dataset Into a Text File</h3>
+
+<p>Finally we output the data into a text file to form an independent tidy data set for future analysis. The data contains column headers and is space delimited.</p>
+
+<pre><code class="R WriteToFile">write.table(newData,&quot;tidyData.txt&quot;,quote=TRUE,row.names = FALSE)
+</code></pre>
+
+</body>
+
+</html>
+
